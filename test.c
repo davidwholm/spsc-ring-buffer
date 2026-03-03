@@ -33,7 +33,8 @@ static inline void chaos(void) {
 }
 
 void *producer(void *arg) {
-    for (size_t i = 0; i < NUM_ITEMS; i++) {
+    (void)arg;
+    for (int i = 0; i < (int)NUM_ITEMS; i++) {
         chaos();
         
         while (ring_buffer_push(&rb, (int *) &i) < 0) {
@@ -45,7 +46,8 @@ void *producer(void *arg) {
 }
 
 void *consumer(void *arg) {
-    for (size_t i = 0; i < NUM_ITEMS; i++) {
+    (void)arg;
+    for (int i = 0; i < (int)NUM_ITEMS; i++) {
         int value;
 
         chaos();
