@@ -1,3 +1,5 @@
+[![Build & Test Ring Buffer](https://github.com/davidwholm/spsc-ring-buffer/actions/workflows/ci.yml/badge.svg)](https://github.com/davidwholm/spsc-ring-buffer/actions/workflows/ci.yml)
+
 # Lock-Free SPSC Ring Buffer
 
 This is a simple implementation of a ring buffer that is single-producer single-consumer and lock-free.
@@ -38,7 +40,7 @@ All of these function return `0` on success, and `-1` on any error. To enable de
 
 # Layout of Ring Buffer
 
-Ring buffers need some way to determine its empty/full status. This becomes apparent if one just sets `head = tail = 0` and starts pushing some elements into the buffer: what does `head == tail` mean? At initialization, `head == tail == 0`, and so it is empty. But once we've filled the buffer, `tail` has reached around to `head`, so `head == tail` but the buffer is full. One simple approach is to reserve an empty slot so that when `head == tail` the buffer is empty, and when `(tail + 1) % capacity == head` the buffer is full. Since our ring buffer is generic, we do not waste the amount of bytes in `elt_size`, but simply one byte. At all times we have this unused byte in order to detected empty/full status.
+Ring buffers need some way to determine its empty/full status. This becomes apparent if one just sets `head = tail = 0` and starts pushing some elements into the buffer: what does `head == tail` mean? At initialization, `head == tail == 0`, and so it is empty. But once we've filled the buffer, `tail` has reached around to `head`, so `head == tail` but the buffer is full. One simple approach is to reserve an empty slot so that when `head == tail` the buffer is empty, and when `(tail + 1) % capacity == head` the buffer is full. One could simply reserve 1 byte for this (instead of `elt_size` bytes), but then elements could themselves wrap around the buffer; this complicates reads/writes to `data` that use `memcpy`. Thus we reserve `elt_size` bytes for this. At all times we have this unused slot in order to detected empty/full status.
 
 The following picture shows an idealized layout of our ring buffer implementation. There are 5 elements in the buffer; `tail` points to the next available slot. Note that `empty slot` is reserved for empty/full status checking. 
 
@@ -109,7 +111,7 @@ There are tests that check the consistency of the `push` and `pop` operations. T
 
 # Dynamic Analysis
 
-The `Makefile` compiles the files with `fsanitize=undefined,thread` in order to use TSan at runtime to detect data races. In fact, during development this has uncovered bugs and now runs the tests without issues. Furthermore, `valgrind` is used to make sure no errors related to memory occur. Note that these two tools cannot uncover bugs in the atomicity of operations. Thus we have other tests as already mentioned.
+The `Makefile` compiles the files with `fsanitize=undefined/thread` in order to use UBSan/TSan at runtime to detect data races. In fact, during development this has uncovered bugs and now runs the tests without issues. Furthermore, `valgrind` is used to make sure no errors related to memory occur. Note that these two tools cannot uncover bugs in the atomicity of operations. Thus we have other tests as already mentioned.
 
 # Building
 
