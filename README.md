@@ -50,8 +50,6 @@ After having pushed two more elements into the buffer, `tail` points to the rese
 
 ![](./img/ringbuffer_full.png)
 
-Note that this is an idealized layout, and that our generic implementation does not use `elt_size` bytes for the reserved slot (unless `elt_size == sizeof(uint8_t)`).
-
 # Concurrency Considerations
 
 ## Atomicity
