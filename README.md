@@ -77,6 +77,32 @@ All other atomic loads use a `relaxed` memory ordering; for example, since `tail
 
 To avoid false sharing of `head` and `tail`, we use a GNU/Clang extension to align those fields to reside on different cache lines. This necessitates knowing the cache line size (can use `getconf` or `sysconf` for example) and `#define CACHE_LINE_SIZE ?` in `ring_buffer.h`.
 
+Using `pahole` we can see (for a cache line size of 64) that the struct layout is as we desire:
+
+```
+$ pahole ring_buffer.o
+struct ring_buffer_t {
+	size_t                     capacity;             /*     0     8 */
+	size_t                     elt_size;             /*     8     8 */
+	uint8_t *                  data;                 /*    16     8 */
+
+	/* XXX 40 bytes hole, try to pack */
+
+	/* --- cacheline 1 boundary (64 bytes) --- */
+	atomic_size_t              head __attribute__((__aligned__(64))); /*    64     8 */
+
+	/* XXX 56 bytes hole, try to pack */
+
+	/* --- cacheline 2 boundary (128 bytes) --- */
+	atomic_size_t              tail __attribute__((__aligned__(64))); /*   128     8 */
+
+	/* size: 192, cachelines: 3, members: 5 */
+	/* sum members: 40, holes: 2, sum holes: 96 */
+	/* padding: 56 */
+	/* forced alignments: 2, forced holes: 2, sum forced holes: 96 */
+} __attribute__((__aligned__(64)));
+```
+
 # Tests
 
 There are tests that check the consistency of the `push` and `pop` operations. To further stress the robustness of the implementation we use randomized yields to make sure the order of reads/writes is as expected.
