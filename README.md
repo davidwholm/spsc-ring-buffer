@@ -71,6 +71,8 @@ For the first, we want that the `memcpy` in `push` is visible as soon as we have
 
 Similarly, we want the `memcpy` in `pop` to be visible as soon as we have updated the `head`; thus we use the `release` memory order again. The `acquire` read in `push` of `head` makes sure that the increment of `head` ensures the popped memory already having been read, so that `push` doesn't overwrite `data` at `head` before it can be safely read by `pop`.
 
+All other atomic loads use a `relaxed` memory ordering; for example, since `tail` is read-write in `push`, the initial load of it is `relaxed`. Similarly in `pop`, because `head` is read-write there, its initial load is also `relaxed`. These are safe because the later `release` writes enforce the correct ordering, so that each respective thread sees the data correctly.
+
 ## False Sharing
 
 To avoid false sharing of `head` and `tail`, we use a GNU/Clang extension to align those fields to reside on different cache lines. This necessitates knowing the cache line size (can use `getconf` or `sysconf` for example) and `#define CACHE_LINE_SIZE ?` in `ring_buffer.h`.
