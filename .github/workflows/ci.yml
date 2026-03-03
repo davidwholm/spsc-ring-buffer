@@ -1,27 +1,32 @@
-name: CI
+name: Build & Test Ring Buffer
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
   pull_request:
-    branches: [ main ]
 
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
 
+    strategy:
+      matrix:
+        target: [debug, ubsan, tsan, valgrind]
+
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      # 1. Checkout the repository
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-      - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y valgrind
+      # 2. Install dependencies (make, gcc, valgrind)
+      - name: Setup build environment
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential valgrind
 
-      - name: Build
-        run: make
-
-      - name: Run tests
-        run: ./test
-
-      - name: Run valgrind
-        run: make valgrind
+      # 3. Run the make target
+      - name: Build and run ${{ matrix.target }}
+        run: |
+          make clean
+          make ${{ matrix.target }}
